@@ -1,23 +1,23 @@
 (ns amaze-2.core
   (:require [quil.core :as q]
-            [quil.middleware :as m]))
+            [quil.middleware :as m]
+            [clojure.core.async :as async :refer [chan]]))
 
-(defn setup [] {})
-(defn update-state [state] [])
-
-(defn draw-state [state]
+(defn update-state [{maze :maze queue :queue :as state}] state)
+(defn draw-state [{maze :maze queue :queue :as state}]
   ; Clear the sketch by filling it with light-grey color.
   (q/background 240))
 
-(defn draw-maze [m]
-  (q/sketch
-   :title "Lost?"
-   :size [500 500]
-   :setup setup
-   :update update-state
-   :draw draw-state
-   :features [:keep-on-top]
-   :middleware [m/fun-mode]))
+(defn maze-canvas [queue]
+    (q/sketch
+    :title "Lost?"
+    :size [500 500]
+    :setup #({:maze nil :queue queue})
+    :update update-state
+    :draw draw-state
+    ;; :on-close #(async/close! queue)
+    :features [:keep-on-top]
+    :middleware [m/fun-mode]))
 
 
 (defn create-maze
@@ -31,10 +31,7 @@
   [maze coord]
   (get-in maze [:cells coord]))
 
+;; Try another way of sending the maze to the canvas.
+;; The initial state will be created with a channel that will be used to poll
+;; mazes to generate.
 
-;; --- Hack and Slash
-(def the-maze (-> (create-maze 4 4)
-                  (assoc-in [:cells [2 2]] {:current true})
-                  (assoc-in [:cells [1 1]] {:visited true})
-                  (assoc-in [:cells [1 2]] {:visited true})))
-(draw-maze the-maze)
