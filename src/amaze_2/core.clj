@@ -15,10 +15,24 @@
     (assoc state :maze maze)
     state))
 
+(defn cell-coord-to-rect
+  "Given the width and height in coordinates - give the rect in Quil coordinates (rect-style)"
+  [[w h] [gw gh] [x y :as coord]]
+  (let [rect-width (/ gw w)
+        rect-height (/ gh h)
+        x-pos (* x rect-width)
+        y-pos (* y rect-height)]
+    [x-pos y-pos rect-width rect-height]))
+
 (defn draw-state [{maze :maze}]
   ; Clear the sketch by filling it with light-grey color.
   (q/background 80)
-  (q/text (str maze) 100 100 200 200)) ;; Dummy - write a String.
+  (let [to-rect (partial cell-coord-to-rect
+                         [(:width maze) (:height maze)]
+                         [(q/width) (q/height)])]
+    (doseq [coord (keys (:cells maze))]
+      (apply q/rect (to-rect coord)))))
+
 
 (defn maze-canvas [queue]
     (q/sketch
@@ -43,6 +57,4 @@
   [maze coord]
   (get-in maze [:cells coord]))
 
-;; Try another way of sending the maze to the canvas.
-;; The initial state will be created with a channel that will be used to poll
-;; mazes to generate.
+;; Sample usage:
