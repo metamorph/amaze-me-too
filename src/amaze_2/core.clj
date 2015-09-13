@@ -1,7 +1,8 @@
 (ns amaze-2.core
   (:require [quil.core :as q]
             [quil.middleware :as m]
-            [clojure.core.async :as a :refer [<! >! <!! timeout chan alt! go]]))
+            [clojure.core.async :as a :refer [<! >! <!! timeout chan alt! go]])
+  (:import [java.util Random]))
 
 (def ^:dynamic *cell-scale* 0.8)
 
@@ -72,21 +73,16 @@
         coords (for [x (range 0 width), y (range 0 height)] [x y])]
     (assoc maze :cells (reduce #(assoc %1 %2 {}) {} coords))))
 
-;; Sample usage:
+;; Implement the maze-generator algo using a step function that will return the 'next' version of the maze.
+;; An alternative to a recursive function (or loop) that will make it easier to push new versions of the maze
+;; to the drawing from a function that 'drives' the algorithm by stepping through the 'collection'.
 
-;; (def q (a/chan 10))
-;; (defn enqueue [maze queue]
-;;   (a/>!! queue maze)
-;;   maze)
-
-;; (maze-canvas q)
+(defn select-any
+  "Inefficient randomizer fn - select one element"
+  [col]
+  (nth col (-> (new Random) (.nextInt (count col)))))
 
 
-;; (-> (create-maze 5 5)
-;;     (enqueue q)
-;;     (assoc-in [:cells [3 3]] {:visited true})
-;;     (enqueue q)
-;;     (assoc-in [:cells [3 2]] {:visited true})
-;;     (enqueue q)
-;;     (assoc-in [:cells [3 1]] {:current true})
-;;     (enqueue q))
+(defn maze-fn [maze] maze)
+(take 2 (iterate maze-fn (create-maze 5 5)))
+
