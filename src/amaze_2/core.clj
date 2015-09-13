@@ -108,3 +108,14 @@
             (assoc :path (conj path current)))
         (assoc maze :done true))))
 
+
+(defn run-maze [width height queue]
+  (let [first-maze (create-maze width height [1 1])
+        pred (fn [x] (not (:done x)))
+        steps (take-while pred (iterate depth-first-maze-generator first-maze))]
+    (doseq [s steps] (a/>!! queue s))))
+
+;; == Usage: ==
+;; (def q (a/chan 10))
+;; (maze-canvas q)
+;; (run-maze 20 20 q)
