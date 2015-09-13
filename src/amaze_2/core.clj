@@ -65,8 +65,8 @@
 
 (defn create-maze
   "Constructor for creating an initial maze with the given size"
-  [width height]
-  {:width width :height height :visited #{} :current nil})
+  [width height start]
+  {:width width :height height :visited #{} :current start :path []})
 
 ;; Implement the maze-generator algo using a step function that will return the 'next' version of the maze.
 ;; An alternative to a recursive function (or loop) that will make it easier to push new versions of the maze
@@ -75,7 +75,8 @@
 (defn select-any
   "Inefficient randomizer fn - select one element"
   [col]
-  (nth col (-> (new Random) (.nextInt (count col)))))
+  (if (empty? col) nil
+      (nth col (-> (new Random) (.nextInt (count col))))))
 
 (defn neighbours
   [w h [x y]]
@@ -91,6 +92,7 @@
   (let [n (neighbours w h coord)
         pred (fn [c] (not (visited c)))]
     (filter pred n)))
+(defn select-next-to-visit [maze coord] (select-any (not-visited-neighbours maze coord)))
 
 (defn depth-first-maze-generator [{done :done
                                    visited :visited
@@ -100,6 +102,9 @@
       ;; Find not visited-cells of the current cell. Select a random, and move
       ;; there (update current and path) If there are none, pop :path and assign
       ;; to :current. If there is no path left - we're done.
-      maze
-      ))
+      (if-let [selected (select-next-to-visit maze current)]
+        (-> (assoc maze :current selected)
+            (assoc :visited (conj visited current))
+            (assoc :path (conj path current)))
+        (assoc maze :done true))))
 
