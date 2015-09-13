@@ -77,7 +77,25 @@
   [col]
   (nth col (-> (new Random) (.nextInt (count col)))))
 
+(defn neighbours
+  [w h [x y]]
+  (let [pred (fn [[x y]]
+               (and
+                (and (>= x 0) (>= y 0))
+                (and (< x w) (< y h))))]
+    (filter pred ((juxt (partial mapv + [0 1])
+                        (partial mapv + [1 0])
+                        (partial mapv + [-1 0])
+                        (partial mapv + [0 -1])) [x y]))))
 
-(defn maze-fn [maze] maze)
-(take 2 (iterate maze-fn (create-maze 5 5)))
+(defn depth-first-maze-generator [{done :done
+                                   visited :visited
+                                   path :path
+                                   current :current :as maze}]
+  (if done maze ;; Return if we're done
+      ;; Find not visited-cells of the current cell. Select a random, and move
+      ;; there (update current and path) If there are none, pop :path and assign
+      ;; to :current. If there is no path left - we're done.
+      maze
+      ))
 
