@@ -23,15 +23,22 @@
         x-pos (* x rect-width)
         y-pos (* y rect-height)]
     [x-pos y-pos rect-width rect-height]))
+(defn scale-rect [scale [x y w h]]
+  (let [new-w (* scale w)
+        new-h (* scale h)
+        diff-x (/ (- w new-w) 2)
+        diff-y (/ (- h new-h) 2)]
+    [(+ x diff-x) (+ y diff-y) new-w new-h]))
 
 (defn draw-state [{maze :maze}]
   ; Clear the sketch by filling it with light-grey color.
   (q/background 80)
-  (let [to-rect (partial cell-coord-to-rect
-                         [(:width maze) (:height maze)]
-                         [(q/width) (q/height)])]
+  (let [to-rect #(scale-rect 0.8 (cell-coord-to-rect
+                                  [(:width maze) (:height maze)]
+                                  [(q/width) (q/height)] %))]
     (doseq [coord (keys (:cells maze))]
       (apply q/rect (to-rect coord)))))
+
 
 
 (defn maze-canvas [queue]
