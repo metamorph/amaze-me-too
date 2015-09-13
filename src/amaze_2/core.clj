@@ -87,6 +87,10 @@
                         (partial mapv + [1 0])
                         (partial mapv + [-1 0])
                         (partial mapv + [0 -1])) [x y]))))
+(defn not-visited-neighbours [{visited :visited h :height w :width} coord]
+  (let [n (neighbours w h coord)
+        pred (fn [c] (not (visited c)))]
+    (filter pred n)))
 
 (defn depth-first-maze-generator [{done :done
                                    visited :visited
