@@ -36,9 +36,11 @@
 (defn get-fill-color [maze coord]
   (if (= coord (:current maze))
     [20 200 20]
-    (if ((:visited maze) coord)
-      [20 20 255]
-      [255 255 255])))
+    (if ((set (:path maze)) coord)
+      [200 20 20]
+      (if ((:visited maze) coord)
+        [20 20 255]
+        [255 255 255]))))
 
 (defn draw-state [{maze :maze}]
   ; Clear the sketch by filling it with light-grey color.
@@ -66,7 +68,7 @@
 (defn create-maze
   "Constructor for creating an initial maze with the given size"
   [width height start]
-  {:width width :height height :visited #{} :current start :path []})
+  {:width width :height height :visited #{} :current start :path '()})
 
 ;; Implement the maze-generator algo using a step function that will return the 'next' version of the maze.
 ;; An alternative to a recursive function (or loop) that will make it easier to push new versions of the maze
@@ -106,7 +108,11 @@
         (-> (assoc maze :current selected)
             (assoc :visited (conj visited current))
             (assoc :path (conj path current)))
-        (assoc maze :done true))))
+        (if-let [selected (first path)]
+          (-> (assoc maze :current selected)
+              (assoc :path (rest path))
+              (assoc :visited (conj visited current)))
+          (assoc maze :done true)))))
 
 
 (defn run-maze [width height queue]
@@ -114,6 +120,8 @@
         pred (fn [x] (not (:done x)))
         steps (take-while pred (iterate depth-first-maze-generator first-maze))]
     (doseq [s steps] (a/>!! queue s))))
+
+
 
 ;; == Usage: ==
 ;; (def q (a/chan 10))
