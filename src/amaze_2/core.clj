@@ -32,27 +32,24 @@
         diff-x (/ (- w new-w) 2)
         diff-y (/ (- h new-h) 2)]
     [(+ x diff-x) (+ y diff-y) new-w new-h]))
-(defn get-maze-cell
-  "Get the value of a cell in a maze"
-  [maze coord]
-  (get-in maze [:cells coord]))
-(defn get-fill-color [cell]
-  (if (:current cell)
-    [0 200 0]
-    (if (:visited cell)
-      [100 100 200]
+
+(defn get-fill-color [maze coord]
+  (if (= coord (:current maze))
+    [20 200 20]
+    (if ((:visited maze) coord)
+      [20 20 255]
       [255 255 255])))
+
 (defn draw-state [{maze :maze}]
   ; Clear the sketch by filling it with light-grey color.
   (q/background 80)
   (let [to-rect #(scale-rect *cell-scale* (cell-coord-to-rect
                                   [(:width maze) (:height maze)]
                                   [(q/width) (q/height)] %))]
-    (doseq [coord (keys (:cells maze))]
-      (q/with-fill (get-fill-color (get-maze-cell maze coord))
+    (doseq [coord (for [x (range (:width maze))
+                        y (range (:height maze))] [x y])]
+      (q/with-fill (get-fill-color maze coord)
         (apply q/rect (to-rect coord))))))
-
-
 
 (defn maze-canvas [queue]
     (q/sketch
@@ -69,9 +66,7 @@
 (defn create-maze
   "Constructor for creating an initial maze with the given size"
   [width height]
-  (let [maze {:width width :height height}
-        coords (for [x (range 0 width), y (range 0 height)] [x y])]
-    (assoc maze :cells (reduce #(assoc %1 %2 {}) {} coords))))
+  {:width width :height height :visited #{} :current nil})
 
 ;; Implement the maze-generator algo using a step function that will return the 'next' version of the maze.
 ;; An alternative to a recursive function (or loop) that will make it easier to push new versions of the maze
