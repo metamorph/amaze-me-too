@@ -4,8 +4,6 @@
             [clojure.core.async :as a :refer [<! >! <!! timeout chan alt! go]])
   (:import [java.util Random]))
 
-(def ^:dynamic *cell-scale* 0.8)
-
 (defn next-maze
   "Take the next maze in the queue"
   [queue timeout]
@@ -18,6 +16,9 @@
     (assoc state :maze maze)
     state))
 
+(defn cell-to-point [[w h :as size] [gw gh :as gsize] [x y :as coord]]
+  (let [[x y rw rh] (cell-coord-to-rect size gsize coord)]
+    [(+ x (/ rw 2)) (+ y (/ rh 2))]))
 (defn cell-coord-to-rect
   "Given the width and height in coordinates - give the rect in Quil coordinates (rect-style)"
   [[w h] [gw gh] [x y :as coord]]
@@ -33,33 +34,39 @@
         diff-y (/ (- h new-h) 2)]
     [(+ x diff-x) (+ y diff-y) new-w new-h]))
 
-(defn get-fill-color [maze coord]
-  (if (= coord (:current maze))
-    [20 200 20]
-    (if ((set (:path maze)) coord)
-      [200 20 20]
-      (if ((:visited maze) coord)
-        [20 20 255]
-        [255 255 255]))))
-
 (defn draw-state [{maze :maze}]
   ; Clear the sketch by filling it with light-grey color.
   (q/background 80)
-  (let [to-rect #(scale-rect *cell-scale* (cell-coord-to-rect
+  (q/ellipse-mode :corner)
+  (let [to-rect #(scale-rect %2 (cell-coord-to-rect
                                   [(:width maze) (:height maze)]
-                                  [(q/width) (q/height)] %))]
+                                  [(q/width) (q/height)] %1))
+        to-point #(cell-to-point [(:width maze) (:height maze)]
+                                 [(q/width) (q/height)] %)]
+    (q/stroke-weight 1)
     (doseq [coord (for [x (range (:width maze))
                         y (range (:height maze))] [x y])]
-      (q/with-fill (get-fill-color maze coord)
-        (apply q/rect (to-rect coord))))))
+      (q/with-fill [255 255 255] (q/with-stroke [150 150 150]
+          (apply q/rect (to-rect coord 1)))))
+    (q/with-fill [20 200 20]
+      (apply q/ellipse (to-rect (:current maze) 0.5) ))
+    (q/with-fill [255 255 255]
+      (doseq [p (:path maze)]
+        (apply q/ellipse (to-rect p 0.3))))
+    (q/with-stroke [20 20 20]
+      (q/stroke-weight 3)
+      (doseq [[a b] (:connected maze)]
+        (q/line (to-point a) (to-point b))))))
 
 (defn maze-canvas [queue]
     (q/sketch
     :title "Lost?"
-    :size [500 500]
-    :setup (fn [] {:maze nil :queue queue})
-    :update update-state
-    :draw draw-state
+    :size [800 800]
+    :setup (fn []
+             (q/smooth)
+             {:maze nil :queue queue})
+    :update #'update-state
+    :draw #'draw-state
     ;; :on-close #(async/close! queue)
     :features [:keep-on-top]
     :middleware [m/fun-mode]))
@@ -68,7 +75,12 @@
 (defn create-maze
   "Constructor for creating an initial maze with the given size"
   [width height start]
-  {:width width :height height :visited #{} :current start :path '()})
+  {:width width
+   :height height
+   :visited #{}
+   :connected #{}
+   :current start
+   :path '()})
 
 ;; Implement the maze-generator algo using a step function that will return the 'next' version of the maze.
 ;; An alternative to a recursive function (or loop) that will make it easier to push new versions of the maze
@@ -98,6 +110,7 @@
 
 (defn depth-first-maze-generator [{done :done
                                    visited :visited
+                                   connected :connected
                                    path :path
                                    current :current :as maze}]
   (if done maze ;; Return if we're done
@@ -106,6 +119,7 @@
       ;; to :current. If there is no path left - we're done.
       (if-let [selected (select-next-to-visit maze current)]
         (-> (assoc maze :current selected)
+            (assoc :connected (conj connected [current selected])) ;; Record a connection between this and next cell.
             (assoc :visited (conj visited current))
             (assoc :path (conj path current)))
         (if-let [selected (first path)]
