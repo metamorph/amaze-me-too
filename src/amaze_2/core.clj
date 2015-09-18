@@ -16,9 +16,6 @@
     (assoc state :maze maze)
     state))
 
-(defn cell-to-point [[w h :as size] [gw gh :as gsize] [x y :as coord]]
-  (let [[x y rw rh] (cell-coord-to-rect size gsize coord)]
-    [(+ x (/ rw 2)) (+ y (/ rh 2))]))
 (defn cell-coord-to-rect
   "Given the width and height in coordinates - give the rect in Quil coordinates (rect-style)"
   [[w h] [gw gh] [x y :as coord]]
@@ -33,6 +30,9 @@
         diff-x (/ (- w new-w) 2)
         diff-y (/ (- h new-h) 2)]
     [(+ x diff-x) (+ y diff-y) new-w new-h]))
+(defn cell-to-point [[w h :as size] [gw gh :as gsize] [x y :as coord]]
+  (let [[x y rw rh] (cell-coord-to-rect size gsize coord)]
+    [(+ x (/ rw 2)) (+ y (/ rh 2))]))
 
 (defn draw-state [{maze :maze}]
   ; Clear the sketch by filling it with light-grey color.
@@ -50,7 +50,7 @@
           (apply q/rect (to-rect coord 1)))))
     (q/with-fill [20 200 20]
       (apply q/ellipse (to-rect (:current maze) 0.5) ))
-    (q/with-fill [255 255 255]
+    (q/with-fill [255 200 200]
       (doseq [p (:path maze)]
         (apply q/ellipse (to-rect p 0.3))))
     (q/with-stroke [20 20 20]
