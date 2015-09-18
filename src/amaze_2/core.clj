@@ -51,7 +51,7 @@
     (q/with-fill [20 200 20]
       (apply q/ellipse (to-rect (:current maze) 0.5) ))
     (q/with-fill [255 200 200]
-      (doseq [p (:path maze)]
+      (doseq [p (:active maze)]
         (apply q/ellipse (to-rect p 0.3))))
     (q/with-stroke [20 20 20]
       (q/stroke-weight 3)
@@ -80,7 +80,7 @@
    :visited #{}
    :connected #{}
    :current start
-   :path '()})
+   :active '()})
 
 ;; Implement the maze-generator algo using a step function that will return the 'next' version of the maze.
 ;; An alternative to a recursive function (or loop) that will make it easier to push new versions of the maze
@@ -111,22 +111,22 @@
 (defn depth-first-maze-generator [{done :done
                                    visited :visited
                                    connected :connected
-                                   path :path
+                                   active :active
                                    current :current :as maze}]
   (if done maze ;; Return if we're done
-      ;; Find not visited-cells of the current cell. Select a random, and move
-      ;; there (update current and path) If there are none, pop :path and assign
-      ;; to :current. If there is no path left - we're done.
-      (if-let [selected (select-next-to-visit maze current)]
-        (-> (assoc maze :current selected)
-            (assoc :connected (conj connected [current selected])) ;; Record a connection between this and next cell.
-            (assoc :visited (conj visited current))
-            (assoc :path (conj path current)))
-        (if-let [selected (first path)]
-          (-> (assoc maze :current selected)
-              (assoc :path (rest path))
-              (assoc :visited (conj visited current)))
-          (assoc maze :done true)))))
+       ;; Find not visited-cells of the current cell. Select a random, and move
+       ;; there (update current and active) If there are none, pop :active and assign
+       ;; to :current. If there is no active left - we're done.
+       (if-let [selected (select-next-to-visit maze current)]
+         (-> (assoc maze :current selected)
+             (assoc :connected (conj connected [current selected])) ;; Record a connection between this and next cell.
+             (assoc :visited (conj visited current))
+             (assoc :active (conj active current)))
+         (if-let [selected (first active)]
+           (-> (assoc maze :current selected)
+               (assoc :active (rest active))
+               (assoc :visited (conj visited current)))
+           (assoc maze :done true))))))
 
 
 (defn run-maze [width height queue]
