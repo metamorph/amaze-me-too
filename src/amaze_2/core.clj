@@ -126,7 +126,7 @@
            (-> (assoc maze :current selected)
                (assoc :active (rest active))
                (assoc :visited (conj visited current)))
-           (assoc maze :done true))))))
+           (assoc maze :done true)))))
 
 
 (defn run-maze [width height queue]
@@ -135,7 +135,7 @@
         steps (take-while pred (iterate depth-first-maze-generator first-maze))]
     (doseq [s steps] (a/>!! queue s))))
 
-
+;; TODO: implement the maze algo as a protocol. need an init-state to allow each algo to add custom entries to the state.
 
 ;; == Usage: ==
 ;; (def q (a/chan 10))
