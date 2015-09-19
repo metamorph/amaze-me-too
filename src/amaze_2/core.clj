@@ -61,7 +61,7 @@
 (defn maze-canvas [queue]
     (q/sketch
     :title "Lost?"
-    :size [800 800]
+    :size [400 400]
     :setup (fn []
              (q/smooth)
              {:maze nil :queue queue})
@@ -108,27 +108,6 @@
     (filter pred n)))
 (defn select-next-to-visit [maze coord] (select-any (not-visited-neighbours maze coord)))
 
-(defn depth-first-maze-generator [{done :done
-                                   visited :visited
-                                   connected :connected
-                                   active :active
-                                   current :current :as maze}]
-  (if done maze ;; Return if we're done
-       ;; Find not visited-cells of the current cell. Select a random, and move
-       ;; there (update current and active) If there are none, pop :active and assign
-       ;; to :current. If there is no active left - we're done.
-       (if-let [selected (select-next-to-visit maze current)]
-         (-> (assoc maze :current selected)
-             (assoc :connected (conj connected [current selected])) ;; Record a connection between this and next cell.
-             (assoc :visited (conj visited current))
-             (assoc :active (conj active current)))
-         (if-let [selected (first active)]
-           (-> (assoc maze :current selected)
-               (assoc :active (rest active))
-               (assoc :visited (conj visited current)))
-           (assoc maze :done true)))))
-
-;; TODO: implement the maze algo as a protocol. need an init-state to allow each algo to add custom entries to the state.
 (defprotocol MazeGenerator "A generator for mazes"
              (initiate-state [this s] "Adds necessary entries to the state")
              (step [this] "Generate the next state. Can be used as an 'iterate' function"))
@@ -136,7 +115,25 @@
 (defrecord DepthFirst []
   MazeGenerator
   (initiate-state [this s] (assoc (merge this s) :active '()))
-  (step [this] (depth-first-maze-generator this)))
+  (step [this] (let [{done :done
+                      visited :visited
+                      connected :connected
+                      active :active
+                      current :current :as maze} this]
+                 (if done maze ;; Return if we're done
+                     ;; Find not visited-cells of the current cell. Select a random, and move
+                     ;; there (update current and active) If there are none, pop :active and assign
+                     ;; to :current. If there is no active left - we're done.
+                     (if-let [selected (select-next-to-visit maze current)]
+                       (-> (assoc maze :current selected)
+                           (assoc :connected (conj connected [current selected])) ;; Record a connection between this and next cell.
+                           (assoc :visited (conj visited current))
+                           (assoc :active (conj active current)))
+                       (if-let [selected (first active)]
+                         (-> (assoc maze :current selected)
+                             (assoc :active (rest active))
+                             (assoc :visited (conj visited current)))
+                         (assoc maze :done true)))))))
 
 (defn run-maze [width height generator queue]
   (let [first-maze (initiate-state generator (create-maze width height [1 1]))
