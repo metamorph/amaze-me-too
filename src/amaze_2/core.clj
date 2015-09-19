@@ -143,23 +143,44 @@
                   (assoc :visited (conj visited current)))
               (assoc maze :done true)))))))
 
-;; (defrecord Prims []
-;;   MazeGenerator
-;;   (initiate-state [this s] (assoc (merge this s) :active []))
-;;   (step [this]
-;;     (let [{done :done
-;;            visited :visited
-;;            connected :connected
-;;            active :active
-;;            current :current} this]
-;;       (if done this
+;; 1. Find an active.
+;;     - if no active: done! 
+;; 2. Set active as current
+;; 3. Find a visited near current
+;; 4. Connect them
+;; 5. Remove current from active
+;; 6. Add current to visited
 
-;;           (
-;;            ;; Find a random 
-;;            )
+(defrecord Prims []
+  MazeGenerator
+  (initiate-state [this {w :width h :height :as s}]
+    (let [start-cell (select-random-cell w h)]
+      (-> this
+          (merge s)
+          (assoc :current start-cell)
+          (assoc :visited #{start-cell})
+          (assoc :active (neighbours w h start-cell))))) ;; :active is a vector
+  (step [this]
+    (let [{done :done
+           visited :visited
+           connected :connected
+           active :active
+           width :width
+           height :height
+           current :current} this]
+      (if done this
+          (if (empty? active) (assoc this :done true)
+              (let [selected (rand-nth active)
+                    visited-pred (fn [coord] (contains? visited coord))
+                    selected-pred (fn [coord] (= coord selected))
+                    neighbour (rand-nth (filter visited-pred (neighbours width height selected)))]
+                (-> this
+                    (assoc :connected (conj connected [selected neighbour]))
+                    (assoc :active (remove selected-pred active))
+                    (assoc :visited (conj visited selected))
+                    (assoc :current selected))))))))
 
-;;           )))
-
+;; TODO (above): Need to add new 'active' (frontier) cells
 
 (defn run-maze
   "Runner function that will render a maze to a queue"
