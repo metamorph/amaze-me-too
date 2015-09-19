@@ -128,14 +128,22 @@
                (assoc :visited (conj visited current)))
            (assoc maze :done true)))))
 
+;; TODO: implement the maze algo as a protocol. need an init-state to allow each algo to add custom entries to the state.
+(defprotocol MazeGenerator "A generator for mazes"
+             (initiate-state [this s] "Adds necessary entries to the state")
+             (step [this] "Generate the next state. Can be used as an 'iterate' function"))
 
-(defn run-maze [width height queue]
-  (let [first-maze (create-maze width height [1 1])
+(defrecord DepthFirst []
+  MazeGenerator
+  (initiate-state [this s] (assoc (merge this s) :active '()))
+  (step [this] (depth-first-maze-generator this)))
+
+(defn run-maze [width height generator queue]
+  (let [first-maze (initiate-state generator (create-maze width height [1 1]))
         pred (fn [x] (not (:done x)))
-        steps (take-while pred (iterate depth-first-maze-generator first-maze))]
+        steps (take-while pred (iterate step first-maze))]
     (doseq [s steps] (a/>!! queue s))))
 
-;; TODO: implement the maze algo as a protocol. need an init-state to allow each algo to add custom entries to the state.
 
 ;; == Usage: ==
 ;; (def q (a/chan 10))
