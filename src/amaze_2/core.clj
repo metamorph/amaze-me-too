@@ -199,7 +199,8 @@
   (let [first-maze (initiate-state generator (create-maze width height))
         pred (fn [x] (not (:done x)))
         steps (take-while pred (iterate step first-maze))]
-    (doseq [s steps] (a/>!! queue s))))
+    (a/go
+      (doseq [s steps] (a/>!! queue s)))))
 
 
 ;; == Usage: ==
