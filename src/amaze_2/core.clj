@@ -63,7 +63,7 @@
     :title "Lost?"
     :size [400 400]
     :setup (fn []
-             (q/frame-rate 30)
+             (q/frame-rate 60)
              (q/smooth)
              {:maze nil :queue queue})
     :update #'update-state
@@ -151,6 +151,12 @@
 ;; 5. Remove current from active
 ;; 6. Add current to visited
 
+(defn visited? [maze cell] (some #(= cell %) (:visited maze)))
+(defn active? [maze cell] (some #(= cell %) (:active maze)))
+(defn prims-frontier-candidates [{width :width height :height :as maze} reference]
+  (let [not-visited-and-not-active (complement (fn [cell] (or (visited? maze cell) (active? maze cell))))]
+    (filter not-visited-and-not-active (neighbours width height reference))))
+
 (defrecord Prims []
   MazeGenerator
   (initiate-state [this {w :width h :height :as s}]
@@ -159,7 +165,7 @@
           (merge s)
           (assoc :current start-cell)
           (assoc :visited #{start-cell})
-          (assoc :active (neighbours w h start-cell))))) ;; :active is a vector
+          (assoc :active (vec (prims-frontier-candidates s start-cell)))))) ;; :active is a vector
   (step [this]
     (let [{done :done
            visited :visited
@@ -176,8 +182,13 @@
                     neighbour (rand-nth (filter visited-pred (neighbours width height selected)))]
                 (-> this
                     (assoc :connected (conj connected [selected neighbour]))
-                    (assoc :active (remove selected-pred active))
                     (assoc :visited (conj visited selected))
+                    (assoc :active (remove selected-pred active))
+                    ((fn [m] (let [frontier-cells (vec (prims-frontier-candidates m selected))]
+                               (if-not (empty? frontier-cells)
+                                 (assoc m :active
+                                        (apply conj (:active m) frontier-cells))
+                                 m))))
                     (assoc :current selected))))))))
 
 ;; TODO (above): Need to add new 'active' (frontier) cells
